@@ -6,7 +6,7 @@ import { validarToken } from "../middlewares/validarToken.js";
 import { crearProducto, mostrarProductos, mostrarproductosId, editarproducto, eliminarProducto } from "../controllers/productos.controllers.js";
 import { crearproveedores, mostrarproveedores, mostrarproveedoresid, editarproveedores, eliminarproveedores } from "../controllers/proveedores.controllers.js";
 import { crearVenta, mostrarVentas, mostrarVentaId, eliminarVenta } from "../controllers/ventas.controllers.js";
-import { reporteVentasTotal } from "../controllers/reportes.controllers.js";
+import { reporteVentas } from "../controllers/reportes.controllers.js";
 import { login } from "../controllers/auth.controllers.js";
 
 const router = Router();
@@ -35,6 +35,6 @@ router.get("/ventas/:id", validarToken, validarIdVenta, mostrarVentaId);
 router.delete("/ventas/:id", validarToken, validarIdVenta, eliminarVenta);
 
 // --- Módulo 5: Reportes (protegido con token) ---
-router.get("/reportes/ventas-total", validarToken, reporteVentasTotal);
+router.get("/reportes/ventas", validarToken, reporteVentas);
 
 export default router;
