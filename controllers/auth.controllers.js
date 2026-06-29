@@ -1,7 +1,6 @@
 import jwt from "jsonwebtoken";
 import { SECRET } from "../middlewares/validarToken.js";
 import { usuarios } from "../data/usuarios.data.js";
- 
 /**
  * Controlador de inicio de sesión.
  * Valida las credenciales del usuario y retorna un JWT si son correctas.
