@@ -5,72 +5,68 @@ import { usuarios } from "../data/usuarios.data.js";
 const LIMITE_STOCK_BAJO = 5; // Aviso cuando queden 5 o menos unidades
 
 export const crearVenta = (req, res) => {
-    const { idProducto, cantidad } = req.body;
+    const { productos: productosBody } = req.body; // array de productos del body
+    const usuarioToken = req.usuario; // usuario del token
 
-    // Validar que el usuario del token esté registrado
-    const usuarioToken = req.usuario;
+    // Verificar que el usuario esté registrado
     const usuarioRegistrado = usuarios.find(u => u.id === usuarioToken.id);
     if (!usuarioRegistrado) {
-        return res.status(401).json({
-            error: "El usuario no está registrado en el sistema"
+        return res.status(401).json({ error: "El usuario no está registrado en el sistema" });
+    }
+
+    // Validar stock de todos los productos antes de registrar
+    for (const item of productosBody) {
+        const producto = productos.find(p => p.id === Number(item.idProducto));
+        if (!producto) return res.status(400).json({ error: `No existe el producto con id ${item.idProducto}` });
+        if (producto.cantidad === 0) return res.status(400).json({ error: `"${producto.nombre}" está agotado` });
+        if (producto.cantidad < Number(item.cantidad)) return res.status(400).json({ error: `Stock insuficiente para "${producto.nombre}"` });
+    }
+
+    const detalles = []; // detalle de cada producto vendido
+    let totalGeneral = 0; // total acumulado de la venta
+
+    // Registrar cada producto y calcular subtotales
+    for (const item of productosBody) {
+        const producto = productos.find(p => p.id === Number(item.idProducto));
+        const subtotal = producto.precio * Number(item.cantidad); // precio x cantidad
+        producto.cantidad -= Number(item.cantidad); // descontar stock
+        totalGeneral += subtotal; // sumar al total
+
+        detalles.push({
+            idProducto: producto.id,
+            nombreProducto: producto.nombre,
+            cantidad: Number(item.cantidad),
+            precioUnitario: producto.precio,
+            subtotal
         });
     }
 
-    const producto = productos.find(p => p.id === Number(idProducto));
-    if (!producto) {
-        return res.status(400).json({
-            error: "No existe un producto registrado con ese idproducto"
-        });
-    }
-
-    // Sin stock disponible
-    if (producto.cantidad === 0) {
-        return res.status(400).json({
-            error: `El producto "${producto.nombre}" está agotado. No hay unidades disponibles.`
-        });
-    }
-
-    // Stock insuficiente para la cantidad pedida
-    if (producto.cantidad < Number(cantidad)) {
-        return res.status(400).json({
-            error: `Stock insuficiente para "${producto.nombre}".`,
-            cantidad_solicitada: Number(cantidad),
-            cantidad_disponible: producto.cantidad
-        });
-    }
-
-    // Registrar la venta
-    const id = ventas.length + 1;
-    const total = producto.precio * Number(cantidad);
-    producto.cantidad -= Number(cantidad);
-
+    // Armar y guardar la venta
     const nuevaVenta = {
-        id,
-        idProducto: Number(idProducto),
-        nombreProducto: producto.nombre,
-        cantidad: Number(cantidad),
-        total,
+        id: ventas.length + 1,
+        productos: detalles,
+        totalGeneral,
         registradoPor: usuarioToken.usuario
     };
     ventas.push(nuevaVenta);
 
-    // Armar respuesta base
-    const respuesta = {
-        mensaje: "Venta registrada exitosamente",
-        nuevaVenta,
-        stock_restante: producto.cantidad
-    };
-
-    // Advertencia si el stock quedó en el límite o por debajo
-    if (producto.cantidad === 0) {
-        respuesta.advertencia = `⚠️ El producto "${producto.nombre}" se ha agotado. Ya no hay unidades disponibles.`;
-    } else if (producto.cantidad <= LIMITE_STOCK_BAJO) {
-        respuesta.advertencia = `⚠️ Stock bajo: solo quedan ${producto.cantidad} unidades de "${producto.nombre}". Se recomienda reabastecer.`;
+    // Advertencia si algún producto quedó con stock bajo
+    const advertencias = [];
+    for (const item of detalles) {
+        const producto = productos.find(p => p.id === item.idProducto);
+        if (producto.cantidad === 0) {
+            advertencias.push(`⚠️ "${producto.nombre}" se ha agotado`);
+        } else if (producto.cantidad <= 5) {
+            advertencias.push(`⚠️ "${producto.nombre}" tiene solo ${producto.cantidad} unidades restantes`);
+        }
     }
 
-    res.status(201).json(respuesta);
+    res.status(201).json({ 
+        mensaje: "Venta registrada exitosamente", 
+        nuevaVenta,
+        advertencias: advertencias.length > 0 ? advertencias : undefined
+    });
 };
-
 export const mostrarVentas = (req, res) => {
     if (ventas.length === 0) {
         return res.status(200).json({

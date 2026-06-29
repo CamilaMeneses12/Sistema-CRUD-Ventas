@@ -1,26 +1,28 @@
-export const validarVenta = (req,res,next)=>{
-    const { idProducto,cantidad}=req.body;
+export const validarVenta = (req, res, next) => {
+    const { productos } = req.body;
 
-    if(!idProducto|| !cantidad){
-        return res.status(400).json({
-            error : "Datos incompletos"
-        });
+    if (!productos || !Array.isArray(productos) || productos.length === 0) {
+        return res.status(400).json({ error: "Debes enviar un array de productos" });
     }
-    let idprodnum = Number(idProducto);
-    let cantidadnum = Number(cantidad);
-    if(isNaN(idprodnum)||isNaN(cantidadnum)){
-        return res.status(400).json({
-            error : "idproducto y cantidad deben ser valores numericos"
-        });
+
+    for (const item of productos) {
+        if (!item.idProducto || !item.cantidad) {
+            return res.status(400).json({ error: "Cada producto debe tener idProducto y cantidad" });
+        }
+        if (isNaN(Number(item.idProducto)) || isNaN(Number(item.cantidad))) {
+            return res.status(400).json({ error: "idProducto y cantidad deben ser valores numéricos" });
+        }
     }
+
     next();
 }
-export const validarIdVenta =(req,res,next)=>{
-    let id= req.params.id;
+
+export const validarIdVenta = (req, res, next) => {
+    let id = req.params.id;
     let idNum = Number(id);
-    if(isNaN(idNum)){
+    if (isNaN(idNum)) {
         return res.status(400).json({
-            error : "El id no es un valor numerico"
+            error: "El id no es un valor numerico"
         });
     }
     next();
