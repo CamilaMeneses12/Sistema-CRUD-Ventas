@@ -28,7 +28,7 @@ export const reporteVentas = (req, res) => {
     const productos_vendidos = ventas.reduce((acc, venta) => {
         for (const item of venta.productos) {
             const key = item.nombreProducto;
-            if (!acc[key]) {
+            if (!acc[key]) { 
                 acc[key] = { nombre: key, cantidad: 0, ingresos: 0 };
             }
             acc[key].cantidad += item.cantidad;
