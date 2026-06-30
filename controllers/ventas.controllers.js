@@ -101,16 +101,17 @@ export const eliminarVenta = (req, res) => {
     }
     const ventaEliminar = ventas[index];
 
-    // Devolver el stock al eliminar una venta
-    const producto = productos.find(p => p.id === ventaEliminar.idProducto);
-    if (producto) {
-        producto.cantidad += ventaEliminar.cantidad;
+    // Devolver el stock de cada producto que estaba en la venta
+    for (const item of ventaEliminar.productos) {
+        const producto = productos.find(p => p.id === item.idProducto);
+        if (producto) {
+            producto.cantidad += item.cantidad;
+        }
     }
 
     ventas.splice(index, 1);
     res.status(200).json({
         exito: "Venta eliminada correctamente",
-        ventaEliminar,
-        stock_restaurado: producto ? producto.cantidad : null
+        ventaEliminar
     });
 };
